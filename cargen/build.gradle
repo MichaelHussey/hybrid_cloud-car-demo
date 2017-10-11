@@ -40,8 +40,18 @@ dependencies {
     compile("com.solacesystems:sol-jcsmp:${solaceJCSMPVersion}")
     
     compile("org.json:json:20151123")
+    
+    // JUnit
+    compile("junit:junit:4.12")
 }
 
 task wrapper(type: Wrapper) {
     gradleVersion = '2.14'
 }
+task createStartScripts(type: CreateStartScripts) {
+  mainClassName = 'com.solace.demos.car.GpsGenerator_POJO'
+  applicationName = 'CarGen'
+  outputDir = file('bin')
+  classpath = files('build/libs/cargen.jar')
+}
+

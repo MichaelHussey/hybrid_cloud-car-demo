@@ -1,27 +1,8 @@
+package com.solace.demos.cargen;
 //package aa.jts;
 
-import org.springframework.http.HttpStatus;
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.*;
-import org.springframework.web.bind.annotation.*;
-
-import org.springframework.cloud.Cloud;
-import org.springframework.cloud.CloudFactory;
-import com.solace.labs.spring.cloud.core.SolaceMessagingInfo;
-
 import java.awt.geom.Point2D;
-import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -30,27 +11,23 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import com.solacesystems.common.util.Base64.InputStream;
 import com.solacesystems.jcsmp.BytesXMLMessage;
-import com.solacesystems.jcsmp.JCSMPChannelProperties;
 import com.solacesystems.jcsmp.JCSMPException;
 import com.solacesystems.jcsmp.JCSMPFactory;
 import com.solacesystems.jcsmp.JCSMPProperties;
-import com.solacesystems.jcsmp.JCSMPReconnectEventHandler;
 import com.solacesystems.jcsmp.JCSMPSession;
 import com.solacesystems.jcsmp.JCSMPStreamingPublishEventHandler;
 import com.solacesystems.jcsmp.Topic;
 import com.solacesystems.jcsmp.XMLMessageConsumer;
 import com.solacesystems.jcsmp.XMLMessageListener;
 import com.solacesystems.jcsmp.XMLMessageProducer;
-import com.solacesystems.jcsmp.TextMessage;
 
-//@Configuration
-//@ComponentScan
-//@RestController
-@EnableAutoConfiguration
-//@SpringBootApplication
-public class GpsGeneratorPCF {
+/**
+ * 
+ * @author michussey
+ *
+ */
+public class GpsGenerator_POJO {
 
     public final static int GPS_UPDATE_RATE_MS = 2000;
     
@@ -68,6 +45,8 @@ public class GpsGeneratorPCF {
     volatile boolean connected = false;
     int numAutoCars = 0;  // used as a counter, for the autonomous car names
     ScheduledExecutorService service = Executors.newScheduledThreadPool(20);
+
+	private String[] args;
     
     enum Direction {
         FORWARD,
@@ -135,6 +114,9 @@ public class GpsGeneratorPCF {
             return String.format("%s's car (ID %s), status=%s, curently at %s",carName,id,status.getPretty(),rawRoutes.get(routeNum).get(index).toString());
         }
         
+        /**
+         * Publish the location of the car on a topic.
+         */
         private void tick() {
         	if (status == Status.REMOVED)
         		return;
@@ -174,11 +156,12 @@ public class GpsGeneratorPCF {
         }
     }
     
-    public GpsGeneratorPCF() {
+    public GpsGenerator_POJO(String[] args) {
         //this.host = host;
         //this.vpn = vpn;
         //this.user = user;
         //this.pw = pw;
+    	this.args = args;
     }
     
     private void sendMessage(BytesXMLMessage message, String topic) throws JCSMPException {
@@ -258,37 +241,18 @@ public class GpsGeneratorPCF {
         }
     }
 
-    void run() throws JCSMPException {
+    void run() throws Exception {
         System.out.println("About to create session.");
-/*
+
+        SolaceMessagingInfo solaceMessagingServiceInfo = SolaceMessagingInfo.getInstance();
+        solaceMessagingServiceInfo.parseArgs(args);
         JCSMPProperties properties = new JCSMPProperties();
-        properties.setProperty(JCSMPProperties.HOST,host);
-        properties.setProperty(JCSMPProperties.VPN_NAME,vpn);
-        properties.setProperty(JCSMPProperties.USERNAME,user);
-        properties.setProperty(JCSMPProperties.PASSWORD,pw);
-        JCSMPChannelProperties cp = new JCSMPChannelProperties();
-        cp.setReconnectRetries(-1);
-        session = JCSMPFactory.onlyInstance().createSession(properties);
-        session.connect();
-*/
-        CloudFactory cloudFactory = new CloudFactory();
-        Cloud cloud = cloudFactory.getCloud();
-
-        SolaceMessagingInfo solaceMessagingServiceInfo = (SolaceMessagingInfo) cloud
-                .getServiceInfo("solace-messaging-demo-instance");
-
-        if (solaceMessagingServiceInfo == null) {
-            System.out.println("Did not find instance of 'solace-messaging' service");
-            System.out.println("************* Aborting Solace initialization!! ************");
-            return;
-        }
-
-		final JCSMPProperties properties = new JCSMPProperties();
-		properties.setProperty(JCSMPProperties.HOST, solaceMessagingServiceInfo.getSmfHost());
-		properties.setProperty(JCSMPProperties.VPN_NAME, solaceMessagingServiceInfo.getMsgVpnName());
-		properties.setProperty(JCSMPProperties.USERNAME, solaceMessagingServiceInfo.getClientUsername());
-		properties.setProperty(JCSMPProperties.PASSWORD, solaceMessagingServiceInfo.getClientPassword());
-
+        properties.setProperty(JCSMPProperties.HOST,solaceMessagingServiceInfo.getSmfHost());
+        properties.setProperty(JCSMPProperties.VPN_NAME,solaceMessagingServiceInfo.getMsgVpnName());
+        properties.setProperty(JCSMPProperties.USERNAME,solaceMessagingServiceInfo.getClientUsername());
+        properties.setProperty(JCSMPProperties.PASSWORD,solaceMessagingServiceInfo.getClientPassword());
+//        JCSMPChannelProperties cp = new JCSMPChannelProperties();
+//        cp.setReconnectRetries(-1);
         session = JCSMPFactory.onlyInstance().createSession(properties);
         session.connect();
 
@@ -393,9 +357,9 @@ public class GpsGeneratorPCF {
     }
 
 
-    public static void main(String... args) throws FileNotFoundException, JCSMPException {
+    public static void main(String... args) throws Exception {
 
-        GpsGeneratorPCF gen = new GpsGeneratorPCF();
+        GpsGenerator_POJO gen = new GpsGenerator_POJO(args);
         gen.load();
         //// TEST CODE HERE:
         gen.addRandomCars(5);
@@ -403,7 +367,7 @@ public class GpsGeneratorPCF {
 
         System.out.println("*** About to start Spring application ***");
 
-        SpringApplication.run(GpsGeneratorPCF.class, args);
+        //SpringApplication.run(GpsGeneratorSpring.class, args);
     }
 
     final static String[] coords = {
