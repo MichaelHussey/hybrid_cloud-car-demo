@@ -45,3 +45,11 @@ dependencies {
 task wrapper(type: Wrapper) {
     gradleVersion = '2.14'
 }
+
+task createStartScripts(type: CreateStartScripts) {
+  mainClassName = 'com.solace.demos.car.VirtualCar'
+  applicationName = 'VirtualCar'
+  outputDir = file('bin')
+  classpath = files('build/libs/cardemo.jar')
+}
+
