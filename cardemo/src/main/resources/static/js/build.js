@@ -602,9 +602,16 @@ APIclient.prototype.removeCar = function(){
 }
 
 APIclient.prototype.makeCall = function(url){
-  $.post(url, {}, function(response){
+//  $.post(url, {}, function(response){
     // process response
-  })
+//    alert(response);
+//  })
+   $.post(url, {}).then(function(response) {
+   		// success code here
+	}, function(response) {
+   		// error code here\
+   		alert(response.status+":"+response.responseText);
+	});
 }
 
 APIclient.prototype.generateID = function(){
