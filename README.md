@@ -78,6 +78,7 @@ cargen
 ```
 
 Start the car movement generator:
+
 ```
 cd cargen
 ./build/install/cargen/bin/cargen -smfHost=192.168.56.110
@@ -85,13 +86,28 @@ cd cargen
 This listens to new demo user registrations published by the VirtualCar and publishes a stream of location 
 messages for each car.
 
+### CarMapServer
+
+The CarMapServer hosts a web page which shows a map with the location and status of all cars. It also shows some
+simple aggregate status for all the virtual cars registered.
+
+This is another Spring Boot Application and again the configuration parameters to the Solace VMR are read 
+from each the ```carmap/src/main/resources/application.properties``` file.
+For a static setup edit this file before building, otherwise the values can be passed on the command line as shown below.
+
+```
+cd carmap
+./build/install/cardemo/bin/carmap --server.port=8081 --solace.smfHost=192.168.56.111
+```
+Once this component is up and running the "analytics front end" for the demo is available at ```http://<address of server>:8081```
+
 ## Contributing
 
 Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull requests to us.
 
 ## Authors
 
-See the list of [contributors](https://github.com/SolaceLabs/pcf-car-demo/graphs/contributors) who participated in this project.
+See the list of [contributors](https://MichaelHussey/hybrid_cloud-car-demo/graphs/contributors) who participated in this project.
 
 ## License
 
