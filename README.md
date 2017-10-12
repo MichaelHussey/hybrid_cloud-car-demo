@@ -107,7 +107,7 @@ Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduc
 
 ## Authors
 
-See the list of [contributors](https://MichaelHussey/hybrid_cloud-car-demo/graphs/contributors) who participated in this project.
+See the list of [contributors](https://github.com/MichaelHussey/hybrid_cloud-car-demo/graphs/contributors) who participated in this project.
 
 ## License
 
