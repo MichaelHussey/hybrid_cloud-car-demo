@@ -19,6 +19,9 @@
 
 package com.solace.demos.car;
 
+import org.springframework.beans.factory.annotation.Value; 
+import org.springframework.context.ApplicationListener;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.context.annotation.ComponentScan;
@@ -43,7 +46,7 @@ import com.solacesystems.jcsmp.XMLMessageProducer;
 @ComponentScan
 @RestController
 @EnableAutoConfiguration
-public class VirtualCar {
+public class VirtualCar implements ApplicationListener<ApplicationReadyEvent>{
 	
 	static private JCSMPSession session;
 
@@ -145,33 +148,45 @@ public class VirtualCar {
 
         return new ResponseEntity<>("{}", HttpStatus.OK);
     }
+    
+    @Value("${solace.smfHost}")
+    private String smfHost;
+    @Value("${solace.vpnName}")
+    private String msgVpnName;
+    @Value("${solace.clientUsername}")
+    private String clientUsername;
+    @Value("${solace.clientPassword}")
+    private String clientPassword;
 
-
-    public static void main(String[] args) throws Exception {
-
-        SolaceMessagingInfo solaceMessagingServiceInfo = SolaceMessagingInfo.getInstance();
-        solaceMessagingServiceInfo.parseArgs(args);
-
-        if (solaceMessagingServiceInfo == null) {
-            System.out.println("Did not find instance of 'solace-messaging' service");
-            System.out.println("************* Aborting Solace initialization!! ************");
-            return;
-        }
+  /**
+   * This event is executed as late as conceivably possible to indicate that 
+   * the application is ready to service requests.
+   */
+  @Override
+  public void onApplicationEvent(final ApplicationReadyEvent event) {
 
 		final JCSMPProperties properties = new JCSMPProperties();
-		properties.setProperty(JCSMPProperties.HOST, solaceMessagingServiceInfo.getSmfHost());
-		properties.setProperty(JCSMPProperties.VPN_NAME, solaceMessagingServiceInfo.getMsgVpnName());
-		properties.setProperty(JCSMPProperties.USERNAME, solaceMessagingServiceInfo.getClientUsername());
-		properties.setProperty(JCSMPProperties.PASSWORD, solaceMessagingServiceInfo.getClientPassword());
+		properties.setProperty(JCSMPProperties.HOST, smfHost);
+		properties.setProperty(JCSMPProperties.VPN_NAME, msgVpnName);
+		properties.setProperty(JCSMPProperties.USERNAME, clientUsername);
+		properties.setProperty(JCSMPProperties.PASSWORD, clientPassword);
 
+	try  {
         session = JCSMPFactory.onlyInstance().createSession(properties);
         session.connect();
-
+        
         System.out.println("************* Solace initialized correctly!! ************");
-        System.out.println("Vpn: " + solaceMessagingServiceInfo.getMsgVpnName());
-        System.out.println("User: " + solaceMessagingServiceInfo.getClientUsername());
-        System.out.println("Passwd: " + solaceMessagingServiceInfo.getClientPassword());
+        System.out.println("Vpn: " + msgVpnName);
+        System.out.println("User: " + clientUsername);
+        System.out.println("Host: " + smfHost);
+    }
+    catch (Exception e) {
+    	e.printStackTrace();
+    }
+    return;
+  }
 
+    public static void main(String[] args) throws Exception {
         SpringApplication.run(VirtualCar.class, args);
     }
 }

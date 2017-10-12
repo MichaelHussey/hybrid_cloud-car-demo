@@ -11,14 +11,15 @@
         <title>Connected Car Demo</title>
 
         <script type="text/javascript">
-          // test
-          // var URL_API_CAR_GAME = 'http://localhost/carAPI';
-          // var URL_API_CAR_GAME = 'http://192.168.1.129/carAPI';
-          // var URL_API_CAR_GAME = 'http://test.construghp.com/cargame18_d51pox7/carAPI';
-          // var URL_API_CAR_GAME = 'http://cardemo.local.pcfdev.io/car';
-          // var URL_API_CAR_GAME = 'http://cardemo.apps.gcp.cfpu.sh/car/';
-          //var URL_API_CAR_GAME = 'http://192.168.56.102:9000/car';
+          /**
+           * This web page is the "car app". It invokes a REST interface to change the status of your car
+           * The REST interface can be either in the same Spring Boot container which hosts 
+           * this index.html (first version with relative path "/car") or it can be set up to
+           * invoke a REST interface directly on the Solace VMR (second version, full IP address and
+           * default port 9000).
+           */
           var URL_API_CAR_GAME = '/car';
+          //var URL_API_CAR_GAME = 'http://192.168.56.102:9000/car';
           
           // prod
           // var URL_API_CAR_GAME = 'http://some_url/car';
