@@ -8,10 +8,10 @@ public class SolaceMessagingInfo {
 		return new SolaceMessagingInfo();
 	}
 
-	private String msgVpnName = "demo_vpn";
-	private String clientUsername = "client01";
-	private String clientPassword = "client01";
-	private String smfHost = "192.168.56.98";
+	private String msgVpnName = "default";
+	private String clientUsername = "default";
+	private String clientPassword = "default";
+	private String smfHost = "192.168.56.111";
 
 	public String getMsgVpnName() {
 		return msgVpnName;

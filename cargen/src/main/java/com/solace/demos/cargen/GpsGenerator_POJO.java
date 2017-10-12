@@ -365,7 +365,7 @@ public class GpsGenerator_POJO {
         gen.addRandomCars(5);
         gen.run();
 
-        System.out.println("*** About to start Spring application ***");
+        System.out.println("*** About to start POJO application ***");
 
         //SpringApplication.run(GpsGeneratorSpring.class, args);
     }

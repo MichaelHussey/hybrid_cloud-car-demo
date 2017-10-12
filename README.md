@@ -30,15 +30,13 @@ the fault. Each of these interactions represent events that flow between the car
 
 ## **Behind the Scenes**
 
-This is the high-level scaling architecture for the connected car scenario. Solace runs native in all the clouds, in this case the IaaS/PaaS combination of 
-Pivotal Cloud Foundry running in Google Cloud Platform. The cars connect, they start streaming their sensor data, and the elastic runtime does the work to scale 
-up and down as necessary. All of these components support the open protocols we talked about before, and they can be auto configured for HA, DR and the kind of 
-reliability you’d expect for enterprise-grade applications.
+This is the high-level architecture for the Hybrid-Cloud connected car scenario. Solace VMRs running
+in two different cloud providers are configured as part of a single Multi-Node Routing group.
 
 ![](http://dev.solace.com/wp-content/uploads/2017/04/pcf-car-demo-architecture-768x407.png)
 
 
-### **Getting Started**
+## **Getting Started**
 
 ```
 git clone https://github.com/MichaelHussey/hybrid_cloud-car-demo
@@ -48,18 +46,44 @@ cd hybrid_cloud-car-demo
 This compiles the code, generates distributable jar files and associated start scripts. To execute a component on a different machine
 simply copy the contents of ```component/install``` to that machine.
 
-Start each of the 3 components individually. When starting on the same machine each Spring container should 
+Start each of the 3 components individually. When starting on the same machine the two Spring containers should 
 have a different HTTP port (otherwise they will collide on the default port). 
 
-The configuration parameters to the Solace VMR are read from each component's src/main/resources/application.properties file.
-For a static setup edit these files, otherwise the values can be passed on the command line as shown below.
+### VirtualCar
+
+The VirtualCar component hosts the "Car Condition App" which you demo participants can use to 
+register themselves and then "cause" and "fix" various faults in the car. 
+
+This is a Spring Boot Application and the configuration parameters to the Solace VMR are read 
+from each the ```cardemo/src/main/resources/application.properties``` file.
+For a static setup edit this file before building, otherwise the values can be passed on the command line as shown below.
 
 ```
 cd cardemo
 ./build/install/cardemo/bin/cardemo --server.port=8080 --solace.smfHost=192.168.56.111
 ```
+Once this component is up and running the demo users can access the app at ```http://<address of server>:8080```
 
+### GpsGenerator_POJO
 
+This is a POJO Application which generates the location for the registered cars using pre-defined trajectories.
+It also creates and moves some "computer-generated" vehicles. It takes the following parameters (default values in brackets)
+
+```
+cargen
+	-smfhost: the message VPN to use (192.168.56.111)
+	-vpn: the message VPN to use (default)
+	-username: the client username (default)
+	-password: the client password (default)
+```
+
+Start the car movement generator:
+```
+cd cargen
+./build/install/cargen/bin/cargen -smfHost=192.168.56.110
+```
+This listens to new demo user registrations published by the VirtualCar and publishes a stream of location 
+messages for each car.
 
 ## Contributing
 
