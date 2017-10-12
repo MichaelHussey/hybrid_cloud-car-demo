@@ -18,10 +18,14 @@ package com.solace.demos.carmap;
  * under the License.
  */
 
+import org.springframework.beans.factory.annotation.Value;
+
 //package com.solace.demos.cloudfoundry.scaling.aggregator;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.ApplicationListener;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -42,7 +46,7 @@ import com.solacesystems.jcsmp.Topic;
 //@ComponentScan
 @RestController
 @EnableAutoConfiguration
-public class CarMapServer_Spring {
+public class CarMapServer_Spring implements ApplicationListener<ApplicationReadyEvent>{
 
 	static private JCSMPSession session;
     static private Queue listenQueue;
@@ -71,7 +75,7 @@ public class CarMapServer_Spring {
                 response += ",\n";
             response += body;
 
-            System.out.print("Removing message from queue...");
+            System.out.print("Removing message from browser...");
             myBrowser.remove(rx_msg);
             System.out.println("Message removed");
 
@@ -83,51 +87,68 @@ public class CarMapServer_Spring {
         return response;
     }
 
+    @Value("${solace.smfHost}")
+    private String smfHost;
+    @Value("${solace.vpnName}")
+    private String msgVpnName;
+    @Value("${solace.clientUsername}")
+    private String clientUsername;
+    @Value("${solace.clientPassword}")
+    private String clientPassword;
+    
+    /**
+     * This event is executed as late as conceivably possible to indicate that 
+     * the application is ready to service requests.
+     */
+    @Override
+    public void onApplicationEvent(final ApplicationReadyEvent event) {
+
+  		final JCSMPProperties properties = new JCSMPProperties();
+  		properties.setProperty(JCSMPProperties.HOST, smfHost);
+  		properties.setProperty(JCSMPProperties.VPN_NAME, msgVpnName);
+  		properties.setProperty(JCSMPProperties.USERNAME, clientUsername);
+  		properties.setProperty(JCSMPProperties.PASSWORD, clientPassword);
+
+  	try  {
+          session = JCSMPFactory.onlyInstance().createSession(properties);
+          session.connect();
+          
+          System.out.println("************* Solace initialized correctly!! ************");
+          System.out.println("Vpn: " + msgVpnName);
+          System.out.println("User: " + clientUsername);
+          System.out.println("Host: " + smfHost);
+          
+          // Now create a queue and subscribe it to car updates
+          EndpointProperties provision = new EndpointProperties();
+          provision.setPermission(EndpointProperties.PERMISSION_DELETE);
+          provision.setAccessType(EndpointProperties.ACCESSTYPE_EXCLUSIVE);
+          provision.setQuota(100);
+
+          listenQueue = JCSMPFactory.onlyInstance().createQueue("cars");
+          session.provision(listenQueue, provision, JCSMPSession.FLAG_IGNORE_ALREADY_EXISTS);
+
+          Topic topic = JCSMPFactory.onlyInstance().createTopic("geo/coord/>");
+          try { 
+              // subscribe to "geo/coord/%s" 
+              session.addSubscription(listenQueue, topic, JCSMPSession.WAIT_FOR_CONFIRM);
+          } catch (Exception e) {}
+
+          BrowserProperties br_prop = new BrowserProperties();
+          br_prop.setEndpoint(listenQueue);
+          br_prop.setTransportWindowSize(50);
+          br_prop.setWaitTimeout(150);
+          myBrowser = session.createBrowser(br_prop);
+
+          System.out.println("************* Solace initialized correctly!! ************");
+      }
+      catch (Exception e) {
+      	e.printStackTrace();
+      }
+      return;
+    }
+    
     public static void main(String[] args) throws Exception {
 
-        SolaceMessagingInfo solaceMessagingServiceInfo = SolaceMessagingInfo.getInstance();
-        solaceMessagingServiceInfo.parseArgs(args);
-
-        if (solaceMessagingServiceInfo == null) {
-            System.out.println("Did not find instance of 'solace-messaging' service");
-            System.out.println("************* Aborting Solace initialization!! ************");
-            return;
-        }
-
-		final JCSMPProperties properties = new JCSMPProperties();
-		properties.setProperty(JCSMPProperties.HOST, solaceMessagingServiceInfo.getSmfHost());
-		properties.setProperty(JCSMPProperties.VPN_NAME, solaceMessagingServiceInfo.getMsgVpnName());
-		properties.setProperty(JCSMPProperties.USERNAME, solaceMessagingServiceInfo.getClientUsername());
-		properties.setProperty(JCSMPProperties.PASSWORD, solaceMessagingServiceInfo.getClientPassword());
-
-        System.out.println("Vpn: " + solaceMessagingServiceInfo.getMsgVpnName());
-        System.out.println("User: " + solaceMessagingServiceInfo.getClientUsername());
-        System.out.println("Passwd: " + solaceMessagingServiceInfo.getClientPassword());
-
-        session = JCSMPFactory.onlyInstance().createSession(properties);
-        session.connect();
-
-        EndpointProperties provision = new EndpointProperties();
-        provision.setPermission(EndpointProperties.PERMISSION_DELETE);
-        provision.setAccessType(EndpointProperties.ACCESSTYPE_EXCLUSIVE);
-        provision.setQuota(100);
-
-        listenQueue = JCSMPFactory.onlyInstance().createQueue("cars");
-        session.provision(listenQueue, provision, JCSMPSession.FLAG_IGNORE_ALREADY_EXISTS);
-
-        Topic topic = JCSMPFactory.onlyInstance().createTopic("geo/coord/>");
-        try { 
-            // subscribe to "geo/coord/%s" 
-            session.addSubscription(listenQueue, topic, JCSMPSession.WAIT_FOR_CONFIRM);
-        } catch (Exception e) {}
-
-        BrowserProperties br_prop = new BrowserProperties();
-        br_prop.setEndpoint(listenQueue);
-        br_prop.setTransportWindowSize(50);
-        br_prop.setWaitTimeout(150);
-        myBrowser = session.createBrowser(br_prop);
-
-        System.out.println("************* Solace initialized correctly!! ************");
 
         SpringApplication.run(CarMapServer_Spring.class, args);
     }
